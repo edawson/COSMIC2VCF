@@ -1,0 +1,16 @@
+  62645 Interchromosomal unknown type
+    397 Intrachromosomal unknown type
+      1 Mutation Type
+    205 interchromosomal amplicon to amplicon
+     38 interchromosomal amplicon to non-amplified dna
+   5284 interchromosomal insertion
+     11 interchromosomal reciprocal translocation
+    462 intrachromosomal amplicon to amplicon
+     15 intrachromosomal amplicon to non-amplified dna
+  56837 intrachromosomal deletion
+     92 intrachromosomal fold-back inversion
+  25260 intrachromosomal inversion
+  28061 intrachromosomal tandem duplication
+  41128 intrachromosomal with inverted orientation
+  73806 intrachromosomal with non-inverted orientation
+     28 multi-component rearrangement
