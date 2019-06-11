@@ -38,6 +38,14 @@ def make_header_dict(line):
 
     return h, r
 
+def info_to_string(info):
+    s = []
+    for i in info:
+        if info[i] is not None and info[i] != "":
+            s.append("=".join([i, str(info[i])]))
+
+    return ";".join(s)
+
 if __name__ == "__main__":
 
     args = parse_args()
@@ -49,16 +57,7 @@ if __name__ == "__main__":
             if header_d is not None:
                 tokens = line.strip().split("\t")
                 mut_type = tokens[header_d["Mutation Type"]]
-
                 
-
-                location_info = tokens[header_d["description"]]
-
-                if mut_type  == "intrachromosomal with non-inverted orientation" or \
-                        mut_type == "intrachromosomal with inverted orientation":
-                    location_info = re.sub("_chr[0-9]*:", "_", location_info)
-                if "_chr" in location_info:
-                    continue
                 svtype = None
                 svtag = None
                 svlen = None
@@ -68,17 +67,26 @@ if __name__ == "__main__":
                 pos = None
                 pos2 = None
                 end = None
-                ret = None
+                ref = None
                 alt = None
                 id_field = None
                 qual = "99"
                 filter_field = ""
-                info = []
+                info = defaultdict(str)
+
+                location_info = tokens[header_d["description"]]
+
                 chrom = location_info.split(":")[0]
                 location_info = ":".join(location_info.split(":")[1:])
+                if mut_type  == "intrachromosomal with non-inverted orientation" or \
+                        mut_type == "intrachromosomal with inverted orientation":
+                    location_info = re.sub("_chr[0-9XYMT]*:", "_", location_info)
+                if "_chr" in location_info:
+                    chrom2 = re.findall("_chr[0-9XYMT]*:", location_info)[0].strip("_:")
+
                 location_info = location_info.strip("g.o")
                 stripped_location_info = location_info.strip("delinsinvdupbrkpttra")
-                intervals = re.findall("\([0-9]*_[0-9]*\)", stripped_location_info)
+                intervals = re.findall("\([0-9]*_[0-9XYMT]*\)", stripped_location_info)
                 if len(intervals) == 0:
                     splits = stripped_location_info.split("_")
                     pos = splits[0]
@@ -117,6 +125,9 @@ if __name__ == "__main__":
                         elif not "inter" in mut_type.lower():
                             svtype = "DEL"
                             svtag = "<DEL>"
+                        elif "inter" in mut_type.lower():
+                            svtype = "TRA"
+                            svtag = "<TRA>"
 
                 elif "tra" in location_info:
                     continue
@@ -140,8 +151,23 @@ if __name__ == "__main__":
                 if svtype == "DEL":
                     svlen = -1 * svlen
 
+                info["SVLEN"] = svlen
+                info["SVTYPE"] = svtype
+                info["END"] = end
+                info["SPAN"] = span
+                if chrom2 is not None:
+                    info["CHR2"] = chrom2
+                info["MUTTYPE"] = str('"' + mut_type.replace(" ", "_") + '"')
 
-                print(chrom, pos, end, svtag, svlen, mut_type)
+                id_field = "."
+                filter_field = "PASS"
+                ref = "<N>"
+                alt = svtag
+
+                
+                infos = info_to_string(info)
+                if svtype is not None:
+                    print("\t".join([str(i) for i in [chrom, pos, id_field, ref, alt, qual, filter_field, infos]]))
 
             else:
                 header_d, reverse_d = make_header_dict(line)
