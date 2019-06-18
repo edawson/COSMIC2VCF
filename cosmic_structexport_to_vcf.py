@@ -4,6 +4,7 @@ import sys
 import re
 from statistics import mean
 from collections import defaultdict
+from math import floor
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -77,12 +78,17 @@ if __name__ == "__main__":
                 location_info = tokens[header_d["description"]]
 
                 chrom = location_info.split(":")[0]
+
                 location_info = ":".join(location_info.split(":")[1:])
                 if mut_type  == "intrachromosomal with non-inverted orientation" or \
                         mut_type == "intrachromosomal with inverted orientation":
                     location_info = re.sub("_chr[0-9XYMT]*:", "_", location_info)
                 if "_chr" in location_info:
                     chrom2 = re.findall("_chr[0-9XYMT]*:", location_info)[0].strip("_:")
+                    if chrom2 is not None:
+                        location_info = re.sub("chr[A-Z0-9]{0,2}:[o]*", "", location_info)
+
+
 
                 location_info = location_info.strip("g.o")
                 stripped_location_info = location_info.strip("delinsinvdupbrkpttra")
@@ -93,54 +99,58 @@ if __name__ == "__main__":
                     end = splits[1]
                 elif len(intervals) == 2:
                     split_intervals = [i.strip("()").split("_") for i in intervals]
-                    mean_intervals = sorted([mean([int(j) for j in i]) for i in split_intervals])
+                    mean_intervals = sorted([floor(mean([int(j) for j in i])) for i in split_intervals])
                     pos = mean_intervals[0]
                     end = mean_intervals[1]
+
                 else:
                     sys.stderr.write("Nonstandard start/length intervals: " + line + "\n")
                     continue
-                   
-                if "del" in location_info:
-                    svtype = "DEL"
-                    svtag = "<DEL>"
-                   
-                elif "ins" in location_info:
-                    svtype = "INS"
-                    svtag = "<INS>"
-                    continue
-                elif "inv" in location_info:
-                    svtype = "INV"
-                    svtag = "<INV>"
-
-                elif "dup" in location_info:
-                    svtype = "DUP"
-                    svtag = "<DUP>"
-
-                elif "bkpt" in location_info:
-                        ## Requires special handling because for some reason this seemed
-                        ## a reasonable format...
-                        if "inverted" in mut_type:
-                            svtype = "INV"
-                            svtag = "<INV>"
-                        elif not "inter" in mut_type.lower():
-                            svtype = "DEL"
-                            svtag = "<DEL>"
-                        elif "inter" in mut_type.lower():
-                            svtype = "TRA"
-                            svtag = "<TRA>"
-
-                elif "tra" in location_info:
-                    continue
-                else:
-                    sys.stderr.write("Invalid SV type: " + location_info + "\n")
-                    continue
-
+                
+                if pos is not None:
+                    pos = str(pos).strip("o")
+                if end is not None:
+                    end = str(end).strip("o")
 
                 if not str(pos).isdigit() or not str(end).isdigit():
+                    sys.stderr.write("Not a digit " + mut_type + " " + str(pos) + " " + str(end)  + "\n")
                     continue
  
                 pos = int(pos)
                 end = int(end)
+
+
+
+
+                ## Requires special handling because for some reason this seemed
+                ## a reasonable format...
+                if mut_type == "intrachromosomal with inverted orientation" or \
+                mut_type == "intrachromosomal inversion" or \
+                "inv" in location_info:
+                    svtype = "INV"
+                    svtag = "<INV>"
+                elif mut_type == "intrachromosomal deletion" or \
+                mut_type == "intrachromosomal with non-inverted orientation" or \
+                mut_type == "Intrachromosomal unknown type" and "bkpt" in location_info or \
+                "del" in location_info:
+                    svtype = "DEL"
+                    svtag = "<DEL>"
+                elif mut_type == "Interchromosomal unknown type" or \
+                mut_type == "interchromosomal reciprocal translocation" or "TRA" in location_info:
+                    svtype = "TRA"
+                    svtag = "<TRA>"
+                elif mut_type == "intrachromosomal tandem duplication" or "dup" in location_info:
+                    svtype = "DUP"
+                    svtag = "<DUP>"
+
+                elif "ins" in location_info:
+                    svtype = "INS"
+                    svtag = "<INS>"
+                    continue
+
+                else:
+                    sys.stderr.write("Invalid SV type: " + location_info + " " + mut_type + "\n")
+                    continue
 
                 if pos > end:
                     tmp = pos
