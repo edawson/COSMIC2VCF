@@ -99,7 +99,7 @@ if __name__ == "__main__":
                     end = splits[1]
                 elif len(intervals) == 2:
                     split_intervals = [i.strip("()").split("_") for i in intervals]
-                    mean_intervals = sorted([floor(mean([int(j) for j in i])) for i in split_intervals])
+                    mean_intervals = [floor(mean([int(j) for j in i])) for i in split_intervals]
                     pos = mean_intervals[0]
                     end = mean_intervals[1]
 
@@ -152,7 +152,7 @@ if __name__ == "__main__":
                     sys.stderr.write("Invalid SV type: " + location_info + " " + mut_type + "\n")
                     continue
 
-                if pos > end:
+                if chrom == chrom2 and  pos > end:
                     tmp = pos
                     pos = end
                     end = tmp
